@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 30 12:15:19 2020
-version 0.2
+version 0.21
 @author: sohuavril
 """
-
+'''
 import sys
 stdout_backup = sys.stdout
 log_file = open("log.log","w")
 sys.stdout = log_file
+'''
 
 import math
 import os
@@ -20,72 +21,27 @@ import queue
 import xlrd
 from datetime import datetime
 from datetime import timedelta
-
 from sklearn.linear_model import LinearRegression
 import numpy as np
 import pandas as pd
 
-income = []
-lost = []
-q_g = queue.Queue()
-q_c = queue.Queue()
-q_r = queue.Queue()
-q_n2 = queue.Queue()
-q_n4 = queue.Queue() 
-q_n8 = queue.Queue()
 
-total_cost = 0
-total_income = 0
+
 
 
 def clear_file(filename):
+    '''用于文件初始化查找并清理冲突文件'''
     if os.path.exists(filename):
         os.remove(filename)
     return 1
 
-clear_file('nc.csv')
-clear_file('new_nc.csv')
-clear_file('vm.csv')
-clear_file('user.db')
-
-
-'''
-读取csv文件进入sqlite,数据库名user.db,表为data_table
-'''
-
-file_names = glob.glob("*.csv") 
-
-con = sqlite3.connect('user.db')
-cursor = con.cursor()
-for file_name in file_names:
-    df = pd.read_csv(file_name)
-    df.to_sql('data_table',con=con,if_exists = 'append')
-    #print('success read ',file_name,'csv to sqlite')
-
-'''
-读入VMType.xls,nc_Status.xls，predict_data.xls创建数据库表
-'''
-
-df = pd.read_excel('VMType.xls')
-df.to_sql('VMType',con=con,if_exists = 'replace')
 
 
 
-df = pd.read_excel('nc_Status.xls')
-df.to_sql('nc_status',con=con,if_exists = 'replace')
 
 
-df = pd.read_excel('predict_data.xls')
-df.to_sql('predict_data',con=con,if_exists = 'replace')
-
-
-con.close()
-
-'''完成数据库创建和初始化'''
-
-
-'''获取数据集中日期'''
 def get_day():
+    '''获取数据集的日期队列'''
     con = sqlite3.connect('user.db')
     sql = "select distinct createtime from data_table order by createtime "
     df_day = pd.read_sql(sql = sql ,con = con)
@@ -93,6 +49,7 @@ def get_day():
     return df_day
 
 def get_startday():
+    '''获取开始日期'''
     con = sqlite3.connect('user.db')
     cursor = con.cursor()
     sql = "select min(createtime) from data_table "
@@ -101,6 +58,7 @@ def get_startday():
     return start_day
 
 def get_endday():
+    '''获取结束日期'''
     con = sqlite3.connect('user.db')
     cursor = con.cursor()
     sql = "select max(createtime) from data_table "
@@ -109,6 +67,7 @@ def get_endday():
     return end_day
 
 def calculate_today_demand(day):
+    '''计算当天vm需求,添加入当天名称的sqlite表中'''
     today = day
     con = sqlite3.connect('user.db')
     cursor = con.cursor()
@@ -121,6 +80,7 @@ def calculate_today_demand(day):
     con.close()
     #print("success calculate ",today," demand and write to db")
     return 1
+
 def get_vmqueue (dataframe,queue):
     '''
     获取vmid队列
@@ -231,7 +191,7 @@ def wt_db_cgx(vmid,ncid,today):
     
 def day_10_before(today): 
     '''
-    10天前
+    日期转换获得10天前日期
     '''
     t =datetime.strptime(today,"%Y-%m-%d")
     t_10 = t + timedelta(days = -10)
@@ -289,6 +249,7 @@ def init_firstday(today):
 
 
 def insert_nc(types,day):
+    '''将报备NC添加进nc_status表中'''
     con = sqlite3.connect('user.db')
     cursor = con.cursor()
     temp = cursor.execute("select count(*) from nc_status").fetchone()
@@ -315,6 +276,9 @@ def insert_nc(types,day):
     
 
 def predict_insert(predict_list,day):
+    '''
+    将预测新增结果加入报备的NC_status表中
+    '''
     today = day
     predict = predict_list
     while predict[0]:
@@ -415,12 +379,18 @@ def distribute_c_g_r(qc,qg,qr,n4,today):
         return 0
     
 def next_day(today):
+    '''
+    日期转换第二天
+    '''
     t =datetime.strptime(today,"%Y-%m-%d")
     t_1 = t + timedelta(days = 1)
     return t_1.strftime("%Y-%m-%d")
 
 
 def wtdb_demand():
+    '''
+    将vm需求写入sqlite的predict_data
+    '''
     con = sqlite3.connect('user.db')
     cursor = con.cursor()
     ecs_c1 = cursor.execute("select sum(memory) from '"+today+"' where supporttype = 'ecs.c1'" ).fetchone()
@@ -464,6 +434,9 @@ def wtdb_demand():
 
 
 def predict_num():
+    '''
+    读取predict_data数据并进行规划预测
+    '''
     con = sqlite3.connect('user.db')
     sql = "select * from predict_data"
     getdata = pd.read_sql(sql,con = con)
@@ -497,7 +470,7 @@ def predict_num():
 
 def predict():
     '''
-    传入count_day 
+    将预测结果转换为新增NC数量 
     '''
     con = sqlite3.connect('user.db')
     cursor = con.cursor()
@@ -586,25 +559,88 @@ def predict():
         demand = [a,b,c]
         con.close
         return demand
+    
+'''--------------------------------------------'''
+'''----------------主程序开始-------------------'''    
+'''--------------------------------------------'''   
+    
+'''---初始化变量---'''
+total_cost = 0
+total_income = 0
+income = []
+lost = []
+
+'''---初始化队列---'''
+q_g = queue.Queue()
+q_c = queue.Queue()
+q_r = queue.Queue()
+q_n2 = queue.Queue()
+q_n4 = queue.Queue() 
+q_n8 = queue.Queue()
+
+'''---清理影响文件---'''
+clear_file('nc.csv')
+clear_file('new_nc.csv')
+clear_file('vm.csv')
+clear_file('user.db')
+
+
+'''---读取csv文件进入sqlite,数据库名user.db,表为data_table---'''
+file_names = glob.glob("*.csv") 
+con = sqlite3.connect('user.db')
+cursor = con.cursor()
+for file_name in file_names:
+    df = pd.read_csv(file_name)
+    df.to_sql('data_table',con=con,if_exists = 'append')
+    #print('success read ',file_name,'csv to sqlite')
+
+
+
+'''---读入VMType.xls,nc_Status.xls，predict_data.xls创建数据库表---'''
+
+df = pd.read_excel('VMType.xls')
+df.to_sql('VMType',con=con,if_exists = 'replace')
+
+
+
+df = pd.read_excel('nc_Status.xls')
+df.to_sql('nc_status',con=con,if_exists = 'replace')
+
+
+df = pd.read_excel('predict_data.xls')
+df.to_sql('predict_data',con=con,if_exists = 'replace')
+
+
+con.close()
+
+'''---完成数据库创建和初始化---'''   
+ 
+
+   
+
 '''----------获取日期----------'''    
 day = get_day()
 startday = get_startday()
 endday = get_endday()
 count_day = 0
 
-'''-----进入日期循环--------'''
+
+
+'''-----进入日期主循环--------'''
 
 try:
 
     for i in day['createtime']:
         print("--------------------------------")
-        print("run time now:",datetime.now())
         print("today is ",i)
+        print("run time now:",datetime.now())
         count_day = count_day + 1
         
         con = sqlite3.connect('user.db')
         cursor = con.cursor()
         
+        
+        '''------清空队列-----'''
         q_g.queue.clear()
         q_c.queue.clear()
         q_r.queue.clear()
@@ -612,30 +648,38 @@ try:
         q_n4.queue.clear() 
         q_n8.queue.clear()
         
-        
-        
-        
-        
+       
         today = i 
+        
+        '''---计算当天新增需求,加入日期表中---'''
         calculate_today_demand(today) 
         
-        '''计算当天新增需求,加入日期表中'''
-        
-    
+        '''---对第一天进行初始化---'''
         
         if today == startday[0]:
+            
+            '''---计算第一天需求---'''
             demand = init_firstday(today)
+            
+            '''---将NC资源报备入库---'''
             predict_insert(demand,today)
             cursor.execute("update nc_status set status = 'free' ")
             con.commit()
-        
+            
+            
+        '''---对NC资源进行重新分配前初始化---'''
         init_nc()
+        
+        
         day_before = day_10_before(today)
+        
+        '''---对10天前报备修改状态---'''
         update_nc(day_before)
         
+        '''---将vm需求写入sqlite的predict_data---'''
         wtdb_demand()  
         
-    
+        '''---获取需求队列和资源队列---'''
         g_group = cursor.execute("select * from " +"'"+today+"'"+" where supporttype = 'ecs.g1' order by memory DESC").fetchall()
         c_group = cursor.execute("select * from " +"'"+today+"'"+" where supporttype = 'ecs.c1' order by memory DESC").fetchall()
         r_group = cursor.execute("select * from " +"'"+today+"'"+" where supporttype = 'ecs.r1' order by memory DESC").fetchall()
@@ -645,13 +689,13 @@ try:
         df_cgroup = pd.DataFrame(c_group)
         df_rgroup = pd.DataFrame(r_group)
         
-        '''获取vmid队列'''
+        '''---获取vmid队列---'''
         get_vmqueue(df_cgroup,q_c).queue
         get_vmqueue(df_ggroup,q_g).queue
         get_vmqueue(df_rgroup,q_r).queue
         
         
-        '''get ncid queue'''
+        '''---get ncid queue---'''
         
         n2_group = cursor.execute("select * from nc_status where status = 'free' and machineType = 'NT-1-2'  ").fetchall()
         n4_group = cursor.execute("select * from nc_status where status = 'free' and machineType = 'NT-1-4'  ").fetchall()
@@ -666,6 +710,7 @@ try:
         get_ncqueue(df_n8group,q_n8).queue
         
         '''---------完成队列获取----------'''
+        
     
         '''----------开始分配资源---------'''    
         
@@ -723,7 +768,9 @@ try:
         else:
             lost.append(0)
             cost = nc_price + float(free_cost[0])*3.6
-            
+        
+        
+        '''-------当天结算---------'''
         total_cost += cost
         total_income += income_today[0]
         print("free_cost:",free_cost)
@@ -758,7 +805,7 @@ try:
             df_newnc.to_sql('newnc',con,if_exists = 'append')    
         
     
-        '''----------将vm需求加入第二天表中--------'''
+        '''----------将vm需求加入后一天需求表中--------'''
         tomorrow = next_day(today)
         df_vm_tomorrow =  pd.DataFrame(cursor.execute("select * from '"+today+"' where status = 'running'").fetchall())
         df_vm_tomorrow.columns = ["a","b","c","d","e","f","g","h","i","j","k","l"]
@@ -767,10 +814,12 @@ try:
         df_vm_tomorrow.to_sql(tomorrow,con,if_exists = 'append')  
         con.close()
         
+        '''------前一天结束，进入后一天循环-----'''
         
         
-        '''------进入第二天循环-----'''
 finally:
+    
+    '''------最终输出csv-----'''
     con = sqlite3.connect('user.db')
     
     df = pd.read_sql("select * from vm",con)
@@ -784,7 +833,6 @@ finally:
     
     con.close()
     
-raise
 
 
 
