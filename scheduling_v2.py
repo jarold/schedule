@@ -671,10 +671,10 @@ try:
         init_nc()
         
         
-        day_before = day_10_before(today)
+        #day_before = day_10_before(today)
         
         '''---对10天前报备修改状态---'''
-        update_nc(day_before)
+        update_nc(today)
         
         '''---将vm需求写入sqlite的predict_data---'''
         wtdb_demand()  
