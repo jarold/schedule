@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 30 12:15:19 2020
-
+version 0.2
 @author: sohuavril
 """
 
@@ -188,6 +188,36 @@ def wt_db_cg(vmid,ncid,today):
         con.close()
         return 0
 
+def wt_db_cgx(vmid,ncid,today):
+    '''
+    c系列和g系列的最佳配比分配执行
+    '''
+    con = sqlite3.connect('user.db')
+    cursor = con.cursor()
+    vcm = cursor.execute("select cpu,memory from "+"'"+today+"'"+" where vmid = '"+vmid+"'").fetchall()
+    vcpu = int(vcm[0][0])
+    vmemory = int(vcm[0][1])
+    ncm = cursor.execute("select ncpu,nmemory,ucpu,umemory from nc_status where ncid = '"+ncid+"'").fetchall()
+    ncpu = int(ncm[0][0])
+    nmemory = int(ncm[0][1])
+    ucpu =  int(ncm[0][2])
+    umemory =  int(ncm[0][3])
+    if (vcpu + ucpu <= ncpu) and (vmemory +umemory <= nmemory):
+        ucpu = ucpu + vcpu
+        umemory = umemory + vmemory
+        cursor.execute("update nc_status set ucpu = ?,umemory = ? where ncid = "+"'"+ncid+"'",(ucpu,umemory))
+        con.commit()
+        cursor.execute("update "+"'"+today+"'"+" set n = "+"'"+ncid+"'"+" where vmid = "+"'"+vmid+"'" )
+        con.commit()
+        #print(vmid,"-------->",ncid,"vcpu:",vcpu,"vmemory:",vmemory,"ucpu:",ucpu,"umemory:",umemory)
+        con.close()
+        return 1
+    else:
+        #print("distribute unsuccess")
+        con.close()
+        return 0
+    
+    
     
 def day_10_before(today): 
     '''
@@ -335,7 +365,7 @@ def distribute_c_g_r(qc,qg,qr,n4,today):
                 break
         while (qg.empty() == False):
             vmgid = qg.get()
-            flag = wt_db_cg(vmgid,gncid,today)
+            flag = wt_db_cgx(vmgid,gncid,today)
             if flag == 0:
                 #print("half",gncid,"is full for vmg")
                 break
