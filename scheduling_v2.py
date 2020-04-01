@@ -147,7 +147,6 @@ def wt_db_cg(vmid,ncid,today):
         ucpu = ucpu + vcpu
         umemory = umemory + vmemory
         cursor.execute("update nc_status set ucpu = ?,umemory = ? where ncid = "+"'"+ncid+"'",(ucpu,umemory))
-        con.commit()
         cursor.execute("update "+"'"+today+"'"+" set n = "+"'"+ncid+"'"+" where vmid = "+"'"+vmid+"'" )
         con.commit()
         #print(vmid,"-------->",ncid,"vcpu:",vcpu,"vmemory:",vmemory,"ucpu:",ucpu,"umemory:",umemory)
@@ -312,7 +311,7 @@ def update_nc(today):
     con = sqlite3.connect('user.db')
     day = day_10_before(today)
     cursor = con.cursor()
-    ud_nc = pd.DataFrame(cursor.execute("select ncid from nc_status where creatime like "+"'"+day+"'").fetchall())                    
+    #ud_nc = pd.DataFrame(cursor.execute("select ncid from nc_status where creatime like "+"'"+day+"'").fetchall())                    
     cursor.execute("update nc_status set status = 'free' where creatime like "+"'"+day+"'" )    
     '''
     for i in ud_nc:
@@ -546,7 +545,7 @@ def predict():
         '''
         
         if pdata[0]>pdata[1]:
-            a = math.ceil((pdata[0]-pdata[1])/128)
+            a = int(math.sqrt((pdata[0]-pdata[1])/128))
             b = int(math.sqrt(pdata[1]/256))
         else:
             a = 0
@@ -569,6 +568,7 @@ total_cost = 0
 total_income = 0
 income = []
 lost = []
+all_average = 0
 
 '''---初始化队列---'''
 q_g = queue.Queue()
@@ -730,7 +730,7 @@ try:
         '''---------predict---------'''
     
         tp = predict()
-        print("tp:",tp)
+        #print("tp:",tp)
     
         
         '''---------插入新增nc------'''
@@ -752,7 +752,7 @@ try:
               
         nc_price = int(n2_price[0])*20016 + int(n4_price[0])*23516 + int(n8_price[0])*30016 
         
-        print ("nc_price:",nc_price)
+        #print ("nc_price:",nc_price)
         
         free_cost = cursor.execute("select 24*sum(ncpu) from nc_status where  status = 'free' ").fetchone()
         
@@ -773,13 +773,16 @@ try:
         '''-------当天结算---------'''
         total_cost += cost
         total_income += income_today[0]
-        print("free_cost:",free_cost)
+        all_average += ((income_today[0]-cost)/cost)
+        #print("free_cost:",free_cost)
         print("******************************")
         print("结算工作")
         print("cost:",cost)
         print("income:",income_today[0])
+        print("当天收益率：",((income_today[0]-cost)/cost)*100,"%")
         print("total cost:",total_cost)
         print("total income:",total_income)
+        print("平均收益率：",(all_average/count_day)*100,"%")
         print("总收益率：",((total_income - total_cost)/total_cost)*100,"%")
         print("******************************")
         
