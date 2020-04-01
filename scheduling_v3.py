@@ -52,10 +52,10 @@ def distribute_c_g_r(qc,qg,qr,n4,today):
             if flag_vc == 0:
                 vmcid = qc.get()
                 flag_vc = vmcid
-                print("vmcid = qc.get:",vmcid)
+                #print("vmcid = qc.get:",vmcid)
             flag = wt_db_cg(vmcid,gncid,today) 
             if flag == 0:
-                print("half",gncid,"is full for vmc")
+                #print("half",gncid,"is full for vmc")
                 break
             else:
                 flag_vc = 0
@@ -65,12 +65,12 @@ def distribute_c_g_r(qc,qg,qr,n4,today):
                 vmgid = qg.get()
                 flag_vg =vmgid
             
-                print("vmgid = qg.get:",vmgid)
+                #print("vmgid = qg.get:",vmgid)
             
             flag = wt_db_cgx(vmgid,gncid,today)
             if flag == 0:
                 flag_n = 0
-                print("half",gncid,"is full for vmg")
+                #print("half",gncid,"is full for vmg")
                 break
             else:
                 flag_vg = 0
@@ -120,9 +120,9 @@ def distribute_c_g_r(qc,qg,qr,n4,today):
     while  (n4.empty() == False) and (qr.empty() == False):
         if flag_vr == 1:
             vmrid = qr.get()
-            print("qrget:",vmrid)
+            #print("qrget:",vmrid)
         flag_vr = wt_db_cgr(vmrid,gncid,today)
-        print("do flag_vr,wtdb",flag_vr)
+        #print("do flag_vr,wtdb",flag_vr)
         if flag_vr == 0:
             gncid = n4.get()
 
@@ -132,15 +132,15 @@ def distribute_c_g_r(qc,qg,qr,n4,today):
 
  
     if n4.empty() == False:
-        print("all distribute")
-        print(df_nct)
-        print(df_vmt['n'])
+        #print("all distribute")
+        #print(df_nct)
+        #print(df_vmt['n'])
         df_nct.to_sql('nc_status',con,if_exists = 'replace')
         df_vmt.to_sql(today,con,if_exists = 'replace')
         con.close()
         return 1
     else :
-        print("NC unavailible")
+        #print("NC unavailible")
         df_nct.to_sql('nc_status',con,if_exists = 'replace')
         df_vmt.to_sql(today,con,if_exists = 'replace')
         con.close()
@@ -234,10 +234,10 @@ def wt_db_cg(vmid,ncid,today):
         df_nct.loc[df_nct['ncid'] == ncid,'umemory'] = umemory
         
         df_vmt.loc[df_vmt['vmid'] == vmid,'n'] = ncid
-        print(vmid,"-------->",ncid,"vcpu:",vcpu,"vmemory:",vmemory,"ucpu:",ucpu,"umemory:",umemory)
+        #print(vmid,"-------->",ncid,"vcpu:",vcpu,"vmemory:",vmemory,"ucpu:",ucpu,"umemory:",umemory)
         return 1
     else:
-        print("distribute unsuccess")
+        #print("distribute unsuccess")
         return 0
 
 def wt_db_cgx(vmid,ncid,today):
@@ -263,11 +263,11 @@ def wt_db_cgx(vmid,ncid,today):
         df_nct.loc[df_nct['ncid'] == ncid,'umemory'] = umemory
         
         df_vmt.loc[df_vmt['vmid'] == vmid,'n'] = ncid
-        print(vmid,"-------->",ncid,"vcpu:",vcpu,"vmemory:",vmemory,"ucpu:",ucpu,"umemory:",umemory)
+        #print(vmid,"-------->",ncid,"vcpu:",vcpu,"vmemory:",vmemory,"ucpu:",ucpu,"umemory:",umemory)
         
         return 1
     else:
-        print("distribute unsuccess")
+        #print("distribute unsuccess")
         
         return 0
 
