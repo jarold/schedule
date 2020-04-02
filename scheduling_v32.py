@@ -526,7 +526,7 @@ def init_firstday(today):
             n4_d = tempg/256
             n4_d = round(n4_d)
             
-    demand = [8*n2_d,8*n4_d,8*n8_d]
+    demand = [10*n2_d,10*n4_d,10*n8_d]
     con.close()
     return demand        
 
