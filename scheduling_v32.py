@@ -840,13 +840,12 @@ def predict():
             b = int(math.sqrt(pdata[1]/256))
         else:
             a = 0
-            b = int(math.sqrt(pdata[1]/256))
+            b = int(math.sqrt(pdata[1]/256)*1.5)
             
-        if pdata[2] - 0.7*ln8d[0] > 256:        
-            c = int((pdata[2]-0.7*ln8d[0])//516)
+        if pdata[2] > 256:        
+            c = int(math.sqrt((pdata[2]-256)//516))
         else:
             c = 0
-        
         demand = [a,b,c]
         con.close
         return demand
